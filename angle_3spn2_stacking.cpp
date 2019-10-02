@@ -262,7 +262,7 @@ void Angle3spn2Stacking::coeff(int narg, char **arg)
   if (!allocated) allocate();
 
   int ilo,ihi;
-  force->bounds(arg[0],atom->nangletypes,ilo,ihi);
+  force->bounds(FLERR,arg[0],atom->nangletypes,ilo,ihi);
 
   double epsi_one = force->numeric(FLERR,arg[1]);
   double sigm_one = force->numeric(FLERR,arg[2]);

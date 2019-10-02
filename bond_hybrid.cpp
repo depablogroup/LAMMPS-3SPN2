@@ -11,9 +11,9 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "ctype.h"
+#include <cmath>
+#include <cstring>
+#include <cctype>
 #include "bond_hybrid.h"
 #include "atom.h"
 #include "neighbor.h"
@@ -33,6 +33,7 @@ BondHybrid::BondHybrid(LAMMPS *lmp) : Bond(lmp)
 {
   writedata = 0;
   nstyles = 0;
+  has_quartic = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -102,8 +103,7 @@ void BondHybrid::compute(int eflag, int vflag)
   // set neighbor->bondlist to sub-style bondlist before call
   // accumulate sub-style global/peratom energy/virial in hybrid
 
-  if (eflag || vflag) ev_setup(eflag,vflag);
-  else evflag = 0;
+  ev_init(eflag,vflag);
 
   for (m = 0; m < nstyles; m++) {
     neighbor->nbondlist = nbondlist[m];
@@ -171,6 +171,7 @@ void BondHybrid::settings(int narg, char **arg)
     delete [] styles;
     for (int i = 0; i < nstyles; i++) delete [] keywords[i];
     delete [] keywords;
+    has_quartic = -1;
   }
 
   if (allocated) {
@@ -203,6 +204,8 @@ void BondHybrid::settings(int narg, char **arg)
   keywords = new char*[nstyles];
 
   // allocate each sub-style and call its settings() with subset of args
+  // allocate uses suffix, but don't store suffix version in keywords,
+  //   else syntax in coeff() will not match
   // define subset of args for a sub-style by skipping numeric args
   // one exception is 1st arg of style "table", which is non-numeric
   // need a better way to skip these exceptions
@@ -212,19 +215,28 @@ void BondHybrid::settings(int narg, char **arg)
   i = 0;
 
   while (i < narg) {
+
     for (m = 0; m < nstyles; m++)
       if (strcmp(arg[i],keywords[m]) == 0)
         error->all(FLERR,"Bond style hybrid cannot use same bond style twice");
+
     if (strcmp(arg[i],"hybrid") == 0)
       error->all(FLERR,"Bond style hybrid cannot have hybrid as an argument");
+
     if (strcmp(arg[i],"none") == 0)
       error->all(FLERR,"Bond style hybrid cannot have none as an argument");
-    styles[nstyles] = force->new_bond(arg[i],lmp->suffix,dummy);
-    keywords[nstyles] = new char[strlen(arg[i])+1];
-    strcpy(keywords[nstyles],arg[i]);
+
+    // register index of quartic bond type,
+    // so that bond type 0 can be mapped to it
+
+    if (strncmp(arg[i],"quartic",7) == 0)
+      has_quartic = m;
+
+    styles[nstyles] = force->new_bond(arg[i],1,dummy);
+    force->store_style(keywords[nstyles],arg[i],0);
+
     istyle = i;
-    //if (strcmp(arg[i],"table") == 0) i++;
-    if ((strcmp(arg[i],"table") == 0) || (strcmp(arg[i],"list") == 0)) i++;
+    if (strcmp(arg[i],"table") == 0) i++;
     i++;
     while (i < narg && !isalpha(arg[i][0])) i++;
     styles[nstyles]->settings(i-istyle-1,&arg[istyle+1]);
@@ -241,7 +253,7 @@ void BondHybrid::coeff(int narg, char **arg)
   if (!allocated) allocate();
 
   int ilo,ihi;
-  force->bounds(arg[0],atom->nbondtypes,ilo,ihi);
+  force->bounds(FLERR,arg[0],atom->nbondtypes,ilo,ihi);
 
   // 2nd arg = bond sub-style name
   // allow for "none" as valid sub-style name
@@ -281,6 +293,12 @@ void BondHybrid::init_style()
 {
   for (int m = 0; m < nstyles; m++)
     if (styles[m]) styles[m]->init_style();
+
+  // bond style quartic will set broken bonds to bond type 0, so we need
+  // to create an entry for it in the bond type to sub-style map
+
+  if (has_quartic >= 0)
+    map[0] = has_quartic;
 }
 
 /* ----------------------------------------------------------------------
@@ -307,6 +325,7 @@ void BondHybrid::write_restart(FILE *fp)
     n = strlen(keywords[m]) + 1;
     fwrite(&n,sizeof(int),1,fp);
     fwrite(keywords[m],sizeof(char),n,fp);
+    styles[m]->write_restart_settings(fp);
   }
 }
 
@@ -331,7 +350,8 @@ void BondHybrid::read_restart(FILE *fp)
     keywords[m] = new char[n];
     if (me == 0) fread(keywords[m],sizeof(char),n,fp);
     MPI_Bcast(keywords[m],n,MPI_CHAR,0,world);
-    styles[m] = force->new_bond(keywords[m],lmp->suffix,dummy);
+    styles[m] = force->new_bond(keywords[m],0,dummy);
+    styles[m]->read_restart_settings(fp);
   }
 }
 

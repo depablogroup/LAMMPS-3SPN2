@@ -24,10 +24,10 @@
 
 #include "error.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
 
 using namespace LAMMPS_NS;
 
@@ -59,6 +59,7 @@ typedef struct { double x,y,z; } dbl3_t;
 PairList::PairList(LAMMPS *lmp) : Pair(lmp)
 {
   single_enable = 0;
+  restartinfo = 0;
   respa_enable = 0;
   cut_global = 0.0;
   style = NULL;
@@ -84,9 +85,7 @@ PairList::~PairList()
 
 void PairList::compute(int eflag, int vflag)
 {
-  if (eflag || vflag) ev_setup(eflag,vflag);
-  else evflag = vflag_fdotr = eflag_global = 
-    vflag_global = eflag_atom = vflag_atom = 0;
+  ev_init(eflag,vflag);
 
   const int nlocal = atom->nlocal;
   const int newton_pair = force->newton_pair;
@@ -121,7 +120,6 @@ void PairList::compute(int eflag, int vflag)
     const double dz = x[i].z - x[j].z;
     const double rsq = dx*dx + dy*dy + dz*dz;
 
-
     fpair = epair = 0.0;
     if (check_flag) {
       if (newton_pair || i < nlocal) ++pc;
@@ -132,73 +130,65 @@ void PairList::compute(int eflag, int vflag)
       const double r2inv = 1.0/rsq;
 
       if (style[n] == HARM) {
-	const double r = sqrt(rsq);
-	const double dr = par.parm.harm.r0 - r;
-	fpair = 2.0*par.parm.harm.k*dr/r;
+        const double r = sqrt(rsq);
+        const double dr = par.parm.harm.r0 - r;
+        fpair = 2.0*par.parm.harm.k*dr/r;
 
-	if (eflag_either)
-	  epair = par.parm.harm.k*dr*dr - par.offset;
+        if (eflag_either)
+          epair = par.parm.harm.k*dr*dr - par.offset;
 
       } else if (style[n] == MORSE) {
 
-	const double r = sqrt(rsq);
-	const double dr = par.parm.morse.r0 - r;
-	const double dexp = exp(par.parm.morse.alpha * dr);
-	fpair = 2.0*par.parm.morse.d0*par.parm.morse.alpha 
-                * (dexp*dexp - dexp) / r;
+        const double r = sqrt(rsq);
+        const double dr = par.parm.morse.r0 - r;
+        const double dexp = exp(par.parm.morse.alpha * dr);
+        fpair = 2.0*par.parm.morse.d0*par.parm.morse.alpha
+          * (dexp*dexp - dexp) / r;
 
-	if (eflag_either)
-	  epair = par.parm.morse.d0 * (dexp*dexp - 2.0*dexp) - par.offset;
+        if (eflag_either)
+          epair = par.parm.morse.d0 * (dexp*dexp - 2.0*dexp) - par.offset;
 
       } else if (style[n] == LJ126) {
 
-	const double r6inv = r2inv*r2inv*r2inv;
-	const double sig6  = mypow(par.parm.lj126.sigma,6);
-	fpair =  24.0*par.parm.lj126.epsilon*r6inv 
-                 * (2.0*sig6*sig6*r6inv - sig6) * r2inv;
+        const double r6inv = r2inv*r2inv*r2inv;
+        const double sig6  = mypow(par.parm.lj126.sigma,6);
+        fpair =  24.0*par.parm.lj126.epsilon*r6inv
+          * (2.0*sig6*sig6*r6inv - sig6) * r2inv;
 
-	if (eflag_either)
-	  epair = 4.0*par.parm.lj126.epsilon*r6inv 
-                  * (sig6*sig6*r6inv - sig6) - par.offset;
+        if (eflag_either)
+          epair = 4.0*par.parm.lj126.epsilon*r6inv
+            * (sig6*sig6*r6inv - sig6) - par.offset;
       } else if (style[n] == LJ1210) {
-
-	const double r6inv = r2inv*r2inv*r2inv;
-	const double r4inv = r2inv*r2inv;
-	const double sig6  = mypow(par.parm.lj1210.sigma,6);
-	const double sig4  = mypow(par.parm.lj1210.sigma,4);
-	fpair =  60.0*par.parm.lj1210.epsilon*r4inv 
-                 * (sig6*sig6*r4inv*r4inv - sig6*sig4*r6inv) * r2inv;
-
-	if (eflag_either)
-	  epair = par.parm.lj1210.epsilon*r4inv 
-                  * (5.0 * sig6*sig6*r4inv*r4inv - 6.0 * sig6*sig4*r6inv) - par.offset;
+	    const double r6inv = r2inv*r2inv*r2inv;
+	    const double r4inv = r2inv*r2inv;
+	    const double sig6  = mypow(par.parm.lj1210.sigma,6);
+	    const double sig4  = mypow(par.parm.lj1210.sigma,4);
+	    fpair =  60.0*par.parm.lj1210.epsilon*r4inv 
+                     * (sig6*sig6*r4inv*r4inv - sig6*sig4*r6inv) * r2inv;
       }
 
-
-
-
       if (newton_pair || i < nlocal) {
-	f[i].x += dx*fpair;
-	f[i].y += dy*fpair;
-	f[i].z += dz*fpair;
+        f[i].x += dx*fpair;
+        f[i].y += dy*fpair;
+        f[i].z += dz*fpair;
       }
 
       if (newton_pair || j < nlocal) {
-	f[j].x -= dx*fpair;
-	f[j].y -= dy*fpair;
-	f[j].z -= dz*fpair;
+        f[j].x -= dx*fpair;
+        f[j].y -= dy*fpair;
+        f[j].z -= dz*fpair;
       }
 
       if (evflag) ev_tally(i,j,nlocal,newton_pair,epair,0.0,fpair,dx,dy,dz);
-    } 
+    }
   }
   if (vflag_fdotr) virial_fdotr_compute();
 
   if (check_flag) {
-     int tmp;
-     MPI_Allreduce(&pc,&tmp,1,MPI_INT,MPI_SUM,world);
-     if (tmp != 2*npairs)
-       error->all(FLERR,"Not all pairs processed in pair_style list");
+    int tmp;
+    MPI_Allreduce(&pc,&tmp,1,MPI_INT,MPI_SUM,world);
+    if (tmp != 2*npairs)
+      error->all(FLERR,"Not all pairs processed in pair_style list");
   }
 }
 
@@ -234,7 +224,7 @@ void PairList::settings(int narg, char **arg)
     if (strcmp(arg[2],"check") == 0) check_flag = 1;
   }
 
-  FILE *fp = fopen(arg[0],"r");
+  FILE *fp = force->open_potential(arg[0]);
   char line[1024];
   if (fp == NULL)
     error->all(FLERR,"Cannot open pair list file");
@@ -249,22 +239,23 @@ void PairList::settings(int narg, char **arg)
   // now read and parse pair list file for real
   npairs = 0;
   char *ptr;
-  int id1, id2, nharm=0, nmorse=0, nlj126=0, nlj1210=0;
+  tagint id1, id2;
+  int nharm=0, nmorse=0, nlj126=0, nlj1210=0;
   while(fgets(line,1024,fp)) {
     ptr = strtok(line," \t\n\r\f");
 
     // skip empty lines
     if (!ptr) continue;
-    
+
     // skip comment lines starting with #
     if (*ptr == '#') continue;
 
     // get atom ids of pair
-    id1 = atoi(ptr);
+    id1 = ATOTAGINT(ptr);
     ptr = strtok(NULL," \t\n\r\f");
     if (!ptr)
       error->all(FLERR,"Incorrectly formatted pair list file");
-    id2 = atoi(ptr);
+    id2 = ATOTAGINT(ptr);
 
     // get potential type
     ptr = strtok(NULL," \t\n\r\f");
@@ -282,12 +273,12 @@ void PairList::settings(int narg, char **arg)
 
       ptr = strtok(NULL," \t\n\r\f");
       if ((ptr == NULL) || (*ptr == '#'))
-	error->all(FLERR,"Incorrectly formatted harmonic pair parameters");
+        error->all(FLERR,"Incorrectly formatted harmonic pair parameters");
       par.parm.harm.k = force->numeric(FLERR,ptr);
 
       ptr = strtok(NULL," \t\n\r\f");
       if ((ptr == NULL) || (*ptr == '#'))
-	error->all(FLERR,"Incorrectly formatted harmonic pair parameters");
+        error->all(FLERR,"Incorrectly formatted harmonic pair parameters");
       par.parm.harm.r0 = force->numeric(FLERR,ptr);
 
       ++nharm;
@@ -298,17 +289,17 @@ void PairList::settings(int narg, char **arg)
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted morse pair parameters");
+        error->all(FLERR,"Incorrectly formatted morse pair parameters");
       par.parm.morse.d0 = force->numeric(FLERR,ptr);
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted morse pair parameters");
+        error->all(FLERR,"Incorrectly formatted morse pair parameters");
       par.parm.morse.alpha = force->numeric(FLERR,ptr);
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted morse pair parameters");
+        error->all(FLERR,"Incorrectly formatted morse pair parameters");
       par.parm.morse.r0 = force->numeric(FLERR,ptr);
 
       ++nmorse;
@@ -319,12 +310,12 @@ void PairList::settings(int narg, char **arg)
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted 12-6 LJ pair parameters");
+        error->all(FLERR,"Incorrectly formatted 12-6 LJ pair parameters");
       par.parm.lj126.epsilon = force->numeric(FLERR,ptr);
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted 12-6 LJ pair parameters");
+        error->all(FLERR,"Incorrectly formatted 12-6 LJ pair parameters");
       par.parm.lj126.sigma = force->numeric(FLERR,ptr);
 
       ++nlj126;
@@ -335,12 +326,12 @@ void PairList::settings(int narg, char **arg)
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted 12-10 LJ pair parameters");
+	    error->all(FLERR,"Incorrectly formatted 12-10 LJ pair parameters");
       par.parm.lj1210.epsilon = force->numeric(FLERR,ptr);
 
       ptr = strtok(NULL," \t\n\r\f");
       if (!ptr)
-	error->all(FLERR,"Incorrectly formatted 12-10 LJ pair parameters");
+	    error->all(FLERR,"Incorrectly formatted 12-10 LJ pair parameters");
       par.parm.lj1210.sigma = force->numeric(FLERR,ptr);
 
       ++nlj1210;
@@ -367,10 +358,10 @@ void PairList::settings(int narg, char **arg)
   if (comm->me == 0) {
     if (screen)
       fprintf(screen,"Read %d (%d/%d/%d/%d) interacting pairs from %s\n",
-	      npairs, nharm, nmorse, nlj126, nlj1210,arg[0]);
+	          npairs, nharm, nmorse, nlj126, nlj1210,arg[0]);
     if (logfile)
       fprintf(logfile,"Read %d (%d/%d/%d/%d) interacting pairs from %s\n",
-	      npairs, nharm, nmorse, nlj126, nlj1210,arg[0]);
+	          npairs, nharm, nmorse, nlj126, nlj1210,arg[0]);
   }
 }
 
@@ -384,8 +375,8 @@ void PairList::coeff(int narg, char **arg)
   if (!allocated) allocate();
 
   int ilo,ihi,jlo,jhi;
-  force->bounds(arg[0],atom->ntypes,ilo,ihi);
-  force->bounds(arg[1],atom->ntypes,jlo,jhi);
+  force->bounds(FLERR,arg[0],atom->ntypes,ilo,ihi);
+  force->bounds(FLERR,arg[1],atom->ntypes,jlo,jhi);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -415,24 +406,24 @@ void PairList::init_style()
       list_parm_t &par = params[n];
 
       if (style[n] == HARM) {
-	const double dr = sqrt(par.cutsq) - par.parm.harm.r0;
-	par.offset = par.parm.harm.k*dr*dr;
+        const double dr = sqrt(par.cutsq) - par.parm.harm.r0;
+        par.offset = par.parm.harm.k*dr*dr;
 
       } else if (style[n] == MORSE) {
-	const double dr = par.parm.morse.r0 - sqrt(par.cutsq);
-	const double dexp = exp(par.parm.morse.alpha * dr);
-	par.offset = par.parm.morse.d0 * (dexp*dexp - 2.0*dexp);
+        const double dr = par.parm.morse.r0 - sqrt(par.cutsq);
+        const double dexp = exp(par.parm.morse.alpha * dr);
+        par.offset = par.parm.morse.d0 * (dexp*dexp - 2.0*dexp);
 
       } else if (style[n] == LJ126) {
-	const double r6inv = par.cutsq*par.cutsq*par.cutsq;
-	const double sig6  = mypow(par.parm.lj126.sigma,6);
-	par.offset = 4.0*par.parm.lj126.epsilon*r6inv * (sig6*sig6*r6inv - sig6);
+	    const double r6inv = par.cutsq*par.cutsq*par.cutsq;
+	    const double sig6  = mypow(par.parm.lj126.sigma,6);
+	    par.offset = 4.0*par.parm.lj126.epsilon*r6inv * (sig6*sig6*r6inv - sig6);
       } else if (style[n] == LJ1210) {
-	const double r6inv = par.cutsq*par.cutsq*par.cutsq;
-	const double r4inv = par.cutsq*par.cutsq;
-	const double sig6  = mypow(par.parm.lj1210.sigma,6);
-	const double sig4  = mypow(par.parm.lj1210.sigma,4);
-	par.offset = par.parm.lj1210.epsilon*r4inv * (5.0 * sig6*sig6*r4inv*r4inv - 6.0 * sig6 * sig4 * r6inv);
+	    const double r6inv = par.cutsq*par.cutsq*par.cutsq;
+	    const double r4inv = par.cutsq*par.cutsq;
+	    const double sig6  = mypow(par.parm.lj1210.sigma,6);
+	    const double sig4  = mypow(par.parm.lj1210.sigma,4);
+	    par.offset = par.parm.lj1210.epsilon*r4inv * (5.0 * sig6*sig6*r4inv*r4inv - 6.0 * sig6 * sig4 * r6inv);
       }
     }
   }
