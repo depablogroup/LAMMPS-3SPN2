@@ -141,7 +141,31 @@ void BondList::settings(int narg, char **arg)
     error->all(FLERR,"Cannot open bond list file");
 
   int num = 1;
-  while(fgets(line,1024,fp)) ++num;
+  char *ptr;
+  int idx, id1, id2;
+  while(fgets(line,1024,fp)) {
+      ptr = strtok(line," \t\n\r\f");
+
+      // skip empty lines
+      if (!ptr) continue;
+
+      // skip comment lines starting with #
+      if (*ptr == '#') continue;
+
+      id1 = atoi(ptr);
+      ptr = strtok(NULL," \t\n\r\f");
+
+      // The second site
+      if (!ptr)
+          error->all(FLERR,"Incorrectly formatted bond list file");
+      id2 = atoi(ptr);
+
+      // Setting the idx in the base array
+      if (id1>num) num=id1;
+      if (id2>num) num=id2;
+
+  }
+  //      while(fgets(line,1024,fp)) ++num;
   rewind(fp);
   int array_size = 4*num+4; // This array size is currently ad hoc
   memory->create(r0,array_size,"bond:r0");
@@ -149,8 +173,7 @@ void BondList::settings(int narg, char **arg)
   memory->create(k3,array_size,"bond:k3");
   memory->create(k4,array_size,"bond:k4");
 
-  char *ptr;
-  int idx, id1, id2;
+
 
   // Loop through the rest of the lines
   while(fgets(line,1024,fp)) { 

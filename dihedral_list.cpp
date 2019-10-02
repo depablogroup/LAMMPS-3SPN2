@@ -320,7 +320,44 @@ void DihedralList::settings(int narg, char **arg)
     error->all(FLERR,"Cannot open dihedral list file");
 
   int num = 1;
-  while(fgets(line,1024,fp)) ++num;
+  char *ptr;
+  int idx, id1, id2, id3, id4;
+  while(fgets(line,1024,fp)) {
+    ptr = strtok(line," \t\n\r\f");
+
+    // skip empty lines
+    if (!ptr) continue;
+
+    // skip comment lines starting with #
+    if (*ptr == '#') continue;
+    id1 = atoi(ptr);
+    ptr = strtok(NULL," \t\n\r\f");
+
+    // The second site
+    if (!ptr)
+      error->all(FLERR,"Incorrectly formatted dihedral list file");
+    id2 = atoi(ptr);
+
+    // The third site
+    ptr = strtok(NULL," \t\n\r\f");
+    if (!ptr)
+      error->all(FLERR,"Incorrectly formatted dihedral list file");
+    id3 = atoi(ptr);
+
+    // The fourth site
+    ptr = strtok(NULL," \t\n\r\f");
+    if (!ptr)
+      error->all(FLERR,"Incorrectly formatted dihedral list file");
+    id4 = atoi(ptr);
+
+    // Setting the idx in the base array
+    if (id1>num) num=id1;
+    if (id2>num) num=id2;
+    if (id3>num) num=id3;
+    if (id4>num) num=id4;
+  }
+
+  //while(fgets(line,1024,fp)) ++num;
   rewind(fp);
   int array_size = 20*(num+2); // Need to optimize this value...
   memory->create(kperiodic,array_size,"dihedral:kperiodic");
@@ -328,9 +365,6 @@ void DihedralList::settings(int narg, char **arg)
   memory->create(phi,array_size,"dihedral:phi");
   memory->create(sigm,array_size,"dihedral:sigm");
   memory->create(style,array_size,"dihedral:style");
-
-  char *ptr;
-  int idx, id1, id2, id3, id4;
 
   // Allocate arrays that are 4*ndihedrals long
   while(fgets(line,1024,fp)) { 

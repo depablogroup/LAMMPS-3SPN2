@@ -179,7 +179,38 @@ void AngleList::settings(int narg, char **arg)
 
   // count lines in file for upper limit of storage needed
   int num = 1;
-  while(fgets(line,1024,fp)) ++num;
+  char *ptr;
+  int idx, id1, id2, id3;
+  while(fgets(line,1024,fp)) {
+    ptr = strtok(line," \t\n\r\f");
+
+    // skip empty lines
+    if (!ptr) continue;
+
+    // skip comment lines starting with #
+    if (*ptr == '#') continue;
+    id1 = atoi(ptr);
+    ptr = strtok(NULL," \t\n\r\f");
+
+    // The second site
+    if (!ptr)
+      error->all(FLERR,"Incorrectly formatted angle list file");
+    id2 = atoi(ptr);
+
+    // The third site
+    ptr = strtok(NULL," \t\n\r\f");
+    if (!ptr)
+      error->all(FLERR,"Incorrectly formatted angle list file");
+    id3 = atoi(ptr);
+
+    // Setting the idx in the base array
+    if (id1>num) num=id1;
+    if (id2>num) num=id2;
+    if (id3>num) num=id3;
+
+  }
+
+  //while(fgets(line,1024,fp)) ++num;
   rewind(fp);
   int array_size = 10*(num+2); 
   // Allocate arrays that *should* contain all angles
@@ -187,8 +218,7 @@ void AngleList::settings(int narg, char **arg)
   memory->create(theta0,array_size,"angle:theta0");
 
   // Read the first line
-  char *ptr;
-  int idx, id1, id2, id3;
+
 
   // Loop through the rest of the lines
   while(fgets(line,1024,fp)) { 
