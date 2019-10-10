@@ -31,6 +31,8 @@ read_data ions_conf.in
   0 = max # of 1-3 neighbors
   0 = max # of 1-4 neighbors
   1 = max # of special neighbors
+  special bonds CPU = 3.98159e-05 secs
+  read_data CPU = 0.00481105 secs
 
 # Specify the pair coefficients
 pair_coeff  1   1   3spn2   0.239006    4.500000
@@ -209,66 +211,114 @@ dump 1 all xyz 2000 traj.xyz
 # Run X number of steps
 run 50000
 PPPM initialization ...
-  G vector (1/distance) = 0.0882954
+  using 12-bit tables for long-range coulomb (../kspace.cpp:323)
+  G vector (1/distance) = 0.0877483
   grid = 10 10 10
   stencil order = 5
-  estimated absolute RMS force accuracy = 2.46385e-05
-  estimated relative force accuracy = 7.41981e-08
-  using double precision FFTs
+  estimated absolute RMS force accuracy = 0.00190314
+  estimated relative force accuracy = 5.73126e-06
+  using double precision KISS FFT
   3d grid and FFT values/proc = 3375 1000
-Memory usage per processor = 7.54953 Mbytes
-Step nbp E_bond E_angle E_dihed ebp ecstk eexcl dna_ecou Temp 
+Neighbor list info ...
+  update every 1 steps, delay 10 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 24
+  ghost atom cutoff = 24
+  binsize = 3.77124, bins = 27 27 27
+  7 neighbor lists, perpetual/occasional/extra = 7 0 0
+  (1) pair 3spn2, perpetual, skip from (7)
+      attributes: half, newton on
+      pair build: skip
+      stencil: none
+      bin: none
+  (2) pair coul/long, perpetual, skip from (7)
+      attributes: half, newton on
+      pair build: skip
+      stencil: none
+      bin: none
+  (3) pair coul/diel, perpetual, copy from (2)
+      attributes: half, newton on
+      pair build: copy
+      stencil: none
+      bin: none
+  (4) pair gauss/cut, perpetual, skip from (7)
+      attributes: half, newton on
+      pair build: skip
+      stencil: none
+      bin: none
+  (5) pair gauss/cut, perpetual, skip from (7)
+      attributes: half, newton on
+      pair build: skip
+      stencil: none
+      bin: none
+  (6) pair lj/cut, perpetual, skip from (7)
+      attributes: half, newton on
+      pair build: skip
+      stencil: none
+      bin: none
+  (7) neighbor class addition, perpetual
+      attributes: half, newton on
+      pair build: half/multi/newton
+      stencil: half/multi/3d/newton
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 10.9 | 10.9 | 10.9 Mbytes
+Step v_nbp E_bond E_angle E_dihed v_ebp v_ecstk v_eexcl v_dna_ecoul Temp 
        0            0            0            0            0            0            0            0            0          300 
-    2000            0            0            0            0            0            0            0            0    346.14314 
-    4000            0            0            0            0            0            0            0            0    272.64049 
-    6000            0            0            0            0            0            0            0            0    302.87216 
-    8000            0            0            0            0            0            0            0            0    295.84694 
-   10000            0            0            0            0            0            0            0            0    278.76306 
-   12000            0            0            0            0            0            0            0            0    303.39975 
-   14000            0            0            0            0            0            0            0            0    276.71828 
-   16000            0            0            0            0            0            0            0            0    321.00491 
-   18000            0            0            0            0            0            0            0            0    281.99429 
-   20000            0            0            0            0            0            0            0            0    347.47682 
-   22000            0            0            0            0            0            0            0            0     284.1741 
-   24000            0            0            0            0            0            0            0            0    280.40649 
-   26000            0            0            0            0            0            0            0            0    313.65625 
-   28000            0            0            0            0            0            0            0            0    308.89446 
-   30000            0            0            0            0            0            0            0            0    304.04946 
-   32000            0            0            0            0            0            0            0            0    273.11404 
-   34000            0            0            0            0            0            0            0            0    336.11807 
-   36000            0            0            0            0            0            0            0            0    307.93176 
-   38000            0            0            0            0            0            0            0            0    278.43373 
-   40000            0            0            0            0            0            0            0            0    315.32608 
-   42000            0            0            0            0            0            0            0            0    315.52795 
-   44000            0            0            0            0            0            0            0            0    288.13278 
-   46000            0            0            0            0            0            0            0            0     269.0761 
-   48000            0            0            0            0            0            0            0            0    255.82564 
-   50000            0            0            0            0            0            0            0            0    278.36319 
-Loop time of 18.0585 on 1 procs for 50000 steps with 156 atoms
+    2000            0            0            0            0            0            0            0            0    340.99937 
+    4000            0            0            0            0            0            0            0            0     274.7211 
+    6000            0            0            0            0            0            0            0            0    296.86114 
+    8000            0            0            0            0            0            0            0            0    293.74097 
+   10000            0            0            0            0            0            0            0            0    284.71988 
+   12000            0            0            0            0            0            0            0            0    298.07567 
+   14000            0            0            0            0            0            0            0            0    274.45779 
+   16000            0            0            0            0            0            0            0            0    313.96832 
+   18000            0            0            0            0            0            0            0            0    291.55523 
+   20000            0            0            0            0            0            0            0            0    351.62022 
+   22000            0            0            0            0            0            0            0            0      276.224 
+   24000            0            0            0            0            0            0            0            0    263.84643 
+   26000            0            0            0            0            0            0            0            0    310.29685 
+   28000            0            0            0            0            0            0            0            0    314.33184 
+   30000            0            0            0            0            0            0            0            0    312.19275 
+   32000            0            0            0            0            0            0            0            0    274.88049 
+   34000            0            0            0            0            0            0            0            0    332.20173 
+   36000            0            0            0            0            0            0            0            0    306.17815 
+   38000            0            0            0            0            0            0            0            0    280.59413 
+   40000            0            0            0            0            0            0            0            0    332.50471 
+   42000            0            0            0            0            0            0            0            0     323.3586 
+   44000            0            0            0            0            0            0            0            0    296.18136 
+   46000            0            0            0            0            0            0            0            0    261.62321 
+   48000            0            0            0            0            0            0            0            0    268.12889 
+   50000            0            0            0            0            0            0            0            0    274.55474 
+Loop time of 14.2932 on 1 procs for 50000 steps with 156 atoms
 
-Pair  time (%) = 3.84704 (21.3032)
-Bond  time (%) = 0.022977 (0.127236)
-Kspce time (%) = 11.7408 (65.0154)
-Neigh time (%) = 1.07193 (5.93584)
-Comm  time (%) = 0.636262 (3.52333)
-Outpt time (%) = 0.00926822 (0.0513232)
-Other time (%) = 0.73023 (4.04368)
+Performance: 3022.410 ns/day, 0.008 hours/ns, 3498.159 timesteps/s
+100.0% CPU use with 1 MPI tasks x no OpenMP threads
 
-FFT time (% of Kspce) = 3.96121 (33.7388)
-FFT Gflps 3d (1d only) = 1.74385 2.5318
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 1.9062     | 1.9062     | 1.9062     |   0.0 | 13.34
+Bond    | 0.0072987  | 0.0072987  | 0.0072987  |   0.0 |  0.05
+Kspace  | 10.977     | 10.977     | 10.977     |   0.0 | 76.80
+Neigh   | 0.85157    | 0.85157    | 0.85157    |   0.0 |  5.96
+Comm    | 0.10528    | 0.10528    | 0.10528    |   0.0 |  0.74
+Output  | 0.0051565  | 0.0051565  | 0.0051565  |   0.0 |  0.04
+Modify  | 0.40831    | 0.40831    | 0.40831    |   0.0 |  2.86
+Other   |            | 0.03238    |            |       |  0.23
 
 Nlocal:    156 ave 156 max 156 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
-Nghost:    400 ave 400 max 400 min
+Nghost:    388 ave 388 max 388 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
-Neighs:    725 ave 725 max 725 min
+Neighs:    0 ave 0 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
 
-Total # of neighbors = 725
-Ave neighs/atom = 4.64744
+Total # of neighbors = 0
+Ave neighs/atom = 0
 Ave special neighs/atom = 0
-Neighbor list builds = 2546
+Neighbor list builds = 2559
 Dangerous builds = 8
 
 Please see the log.cite file for references relevant to this simulation
 
+Total wall time: 0:00:14
