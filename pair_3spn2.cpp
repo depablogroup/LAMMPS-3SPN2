@@ -96,6 +96,7 @@ void Pair3spn2::compute(int eflag, int vflag)
   double rsq,r2inv,r6inv,forcecoul,forcelj,factor_coul,factor_lj;
   int stea, steb, stec, sted, stee, stef, steg, steh, myitype, myjtype;
   int *ilist,*jlist,*numneigh,**firstneigh;
+  int icg, ich;
 
   eexcl = ecoul = ebp = ecstk = ebasepair = ecrossstack = engy = 0.0;
   if (eflag || vflag) ev_setup(eflag,vflag);
@@ -254,8 +255,19 @@ void Pair3spn2::compute(int eflag, int vflag)
                     {int tmp = myitype;
                     myitype = myjtype;
                     myjtype = tmp;}
+                    //Make sure steg and steh are in atom list
+                    if (steg > atom->natoms) {
+                      icg = -1;
+                    } else {
+                      icg = atom->map(steg);
+                    }
+                    if (steh < 1) {
+                      ich = -1;
+                    } else {
+                      ich = atom->map(steh);
+                    }
                     // Now I map them to local coordinates
-                    int index_complement[6] = {atom->map(stec), atom->map(sted), atom->map(stea),atom->map(steb),atom->map(steh), atom->map(steg)};
+                    int index_complement[6] = {atom->map(stec), atom->map(sted), atom->map(stea),atom->map(steb),ich, icg};
                     int site_type_complement[6], mytype_complement;
                     for (int q = 0; q < SIX; q++)
                     {
