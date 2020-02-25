@@ -94,8 +94,9 @@ void Pair3spn2::compute(int eflag, int vflag)
   double qtmp,xtmp,ytmp,ztmp,delx,dely,delz,evdwl,ecoul, ebp, ecstk, ebasepair,
   ecrossstack, fpair, eexcl,engy;
   double rsq,r2inv,r6inv,forcecoul,forcelj,factor_coul,factor_lj;
-  int stea, steb, stec, sted, stee, stef, myitype, myjtype;
+  int stea, steb, stec, sted, stee, stef, steg, steh, myitype, myjtype;
   int *ilist,*jlist,*numneigh,**firstneigh;
+  int icg, ich;
 
   eexcl = ecoul = ebp = ecstk = ebasepair = ecrossstack = engy = 0.0;
   if (eflag || vflag) ev_setup(eflag,vflag);
@@ -183,10 +184,6 @@ void Pair3spn2::compute(int eflag, int vflag)
 
                     if (steb < sted)
                     {
-                        stee = sted - 3;
-                        stef = steb + 3;
-                        stea = steb - 1;
-                        stec = sted - 1;
                         myitype = itype;
                         myjtype = jtype;
                     }
@@ -195,13 +192,13 @@ void Pair3spn2::compute(int eflag, int vflag)
                         int tmp = sted;
                         sted = steb;
                         steb = tmp;
-                        stea = steb - 1;
-                        stec = sted - 1;
-                        stee = sted - 3;
-                        stef = steb + 3;
                         myitype = jtype;
                         myjtype = itype;
                     }
+                    stea = steb - 1;
+                    stec = sted - 1;
+                    stee = sted - 3;
+                    stef = steb + 3;
                     // Now I map them to local coordinates
                     int index[6] = {atom->map(stea), atom->map(steb), atom->map(stec),atom->map(sted),atom->map(stee), atom->map(stef)};
                     int site_type[6], mytype;
@@ -248,6 +245,65 @@ void Pair3spn2::compute(int eflag, int vflag)
                     // Determine whether or not this is indeed a base pair
                     if (ebasepair <  -bp_cutoff * basepair->epsi[2]) nbps++;
                     if ((ebasepair <  -bp_cutoff * basepair->epsi[2]) && (molecule[i] != molecule[j])) nbps_inter++;
+
+                    //Calculate complementary crosstacking interaction
+
+                    steg = sted + 3;
+                    steh = steb - 3;
+                    stea = steb - 1;
+                    stec = sted - 1;
+                    {int tmp = myitype;
+                    myitype = myjtype;
+                    myjtype = tmp;}
+                    //Make sure steg and steh are in atom list
+                    if (steg > atom->natoms) {
+                      icg = -1;
+                    } else {
+                      icg = atom->map(steg);
+                    }
+                    if (steh < 1) {
+                      ich = -1;
+                    } else {
+                      ich = atom->map(steh);
+                    }
+                    // Now I map them to local coordinates
+                    int index_complement[6] = {atom->map(stec), atom->map(sted), atom->map(stea),atom->map(steb),ich, icg};
+                    int site_type_complement[6], mytype_complement;
+                    for (int q = 0; q < SIX; q++)
+                    {
+                        if (index_complement[q] != -1){
+                          mytype_complement = atom->type[index_complement[q]];  
+                          if (mytype_complement <= 14){
+                            //make sure its a dna site
+                            site_type_complement[q] = (mytype_complement - 3) % 4; 
+                          }
+                          else{
+                            site_type_complement[q] = EMPTY;
+                          }
+                        }
+                        else{
+                          site_type_complement[q] = EMPTY;
+                        }
+                    }
+                   
+                    // Initializing the distances used for cross stacking
+                    basepair->assign(index_complement, site_type_complement ,param, angle, x);
+
+                    // Calculating each cross stacking interaction
+
+                    // Calculate first cross stacking interaction if site d is
+                    // not a terminal base
+                    if (!(bp_array[myitype-1][myjtype-1] % 2))
+                    {
+                        ecrossstack += basepair->cross_stacking(0,f);  // Interaction 1
+                    }
+
+                    // Calcuate second cross stacking interaction if site b is
+                    // not a terminal base
+                    if (!(bp_array[myitype-1][myjtype-1] % 3))
+                    {
+                        ecrossstack += basepair->cross_stacking(1,f);  // Interaction 2
+                    }
                 }
                 else
                 {
@@ -515,9 +571,9 @@ void Pair3spn2::settings(int narg, char **arg)
    for (i = 0; i < FOUR; i++) {
         for (j = 0; j < FOUR; j++) {
             // cstk_1
-            param[9][i][j] = cstk_scale_factor * 0.5 * cstk[i][WC[j]];
+            param[9][i][j] = 0.5 * cstk_scale_factor * 0.5 * cstk[i][WC[j]]; //Scaled back crosstacking interaction to account for complement chain
             // cstk_2
-            param[10][i][j] = cstk_scale_factor * 0.5 * cstk[WC[i]][j];
+            param[10][i][j] = 0.5 * cstk_scale_factor * 0.5 * cstk[WC[i]][j]; //Scaled back crosstacking interaction to account for complement chain
             //printf("cstk1[%d][%d]=%lf\n", i,j,param[9][i][j]*4.184);
         }
    }

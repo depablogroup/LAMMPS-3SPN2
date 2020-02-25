@@ -34,9 +34,9 @@ http://ime.uchicago.edu/de_pablo_lab/research/dna_folding_and_hybridization/3spn
 Moving forward, we hope to coordinate all updates and communication through github.
 
 ### LAMMPS Versions ###
-USER-3SPN has not been tested with versions of LAMMPS newer than 13 Jan 2014. 
+USER-3SPN has not been tested with versions of LAMMPS newer than 7 Aug 2019. 
 We welcome pull requests that update USER-3SPN2 to be compatable with more recent versions of LAMMPS.
-In the meantime however, it is recommended that you use the 13 Jan 2014 version of LAMMPS for your simulations.
+In the meantime however, it is recommended that you use the 7 Aug 2019 version of LAMMPS for your simulations.
 
 ### Oct. 12, 2015 ###
 The GCGI/ directory was added, which contains necessary files for using 
