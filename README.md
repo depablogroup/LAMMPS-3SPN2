@@ -20,18 +20,7 @@ Also include is a .pdf containing additional documentation and instructions for
 compiling and visualization.
 
 If you have any questions and concerns associated with bugs (not with general 
-(non-3SPN.2) compilation or LAMMPS issuyes!) please direct your inquiries to 
-Dan Hinckley (hinckley.dan@gmail.com).
-
-The following website has historically held information regarding on-going improvements to
-the 3SPN.2 model, as well as recent publications by the de Pablo group and
-others.
-
-https://uchic.ag/3spn2
-
-http://ime.uchicago.edu/de_pablo_lab/research/dna_folding_and_hybridization/3spn.2/
-
-Moving forward, we hope to coordinate all updates and communication through github.
+non-3SPN.2 compilation or LAMMPS issues) please feel free to open a GitHub issue.
 
 ### LAMMPS Versions ###
 USER-3SPN has not been tested with versions of LAMMPS newer than 7 Aug 2019. 
